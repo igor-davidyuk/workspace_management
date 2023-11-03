@@ -4,6 +4,7 @@ jpeg: image
 gif: image
 txt: text
 md: text
+py: text
 vid: video
 mp4: video
 avi: video

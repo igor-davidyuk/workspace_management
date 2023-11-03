@@ -1,6 +1,7 @@
 """Filesystem Item Module."""
 import logging
 import math
+import re
 from pathlib import Path  # Only used in `add` method
 import time
 from typing import Dict, List, Optional, Tuple
@@ -20,9 +21,6 @@ class Item:
         self.name = name
         self.size_b = 0
         self.initialization_time = time.localtime()
-
-    # def view(self):
-    #     raise NotImplementedError()
 
 class File(Item):
     def __init__(self, name: str, size_b: int) -> None:
@@ -72,12 +70,12 @@ class Folder(Item):
         # Find out the item name
         item_name = name_override if name_override else path.name
         if not item_name:  # In case of '.' input path
-            item_name = '.'
+            item_name = path.absolute().name
 
         if path.is_file():
             self.children_dict[item_name] = File(path.name, size_b=path.stat().st_size)
         if path.is_dir():
-            child_folder = self.__class__(path.name)
+            child_folder = self.__class__(item_name)
             for element in path.glob('*'):
                 child_folder.add(str(element), ignore_hidden=ignore_hidden)
             self.children_dict[item_name] = child_folder
@@ -124,20 +122,58 @@ class Folder(Item):
         
     def traverse(self, depth: int = 0, path_to_dir: str = '') -> List[Tuple[Item, int, str]]:
         result = []
-        for item in sorted(self.children_dict.values(), key=self._get_sorting_function()):
+        for item in self.children_dict.values():
             if type(item) == File:
                 result.append((item, depth, path_to_dir))
             else:  # Folder
                 result.append((item, depth, path_to_dir))
                 result.extend(item.traverse(depth=depth+1, path_to_dir=path_to_dir + f'/{item.name}'))
         return result
+    
+    def __repr__(self) -> str:
+        item_list = self.traverse()
+        result = ''
+        for item, depth, path_to_dir in item_list:
+            file_representation = ('|- ' + str(item)) if type(item) == File else ('┎ ' + item.name)
+            result += INDENT_SYMBOL * depth + file_representation + '\n'
+        return result
+    
+    def filter(self, pattern: str = '', filetype: str = '', min_size: int = 0) -> str:
+        item_list = self.traverse()
+        filtered_list = []
+        def combined_filter(item, pattern, filetype, min_size) -> bool:
+            # print(pattern, item.name, pattern in item.name)
+            match = False
+            if pattern:
+                if pattern in item.name:
+                    match = True
+                else:
+                    match = False
+            if filetype:
+                if filetype == item.type:
+                    match = True
+                else:
+                    match = False
+            if min_size:
+                if min_size <= item.size_b:
+                    match = True
+                else:
+                    match = False
+            # print(filetype)
+            return match
+
+        for item, depth, path_to_dir in item_list:
+            if type(item) == File:
+                if combined_filter(item, pattern, filetype, min_size):
+                    filtered_list.append((item, depth, path_to_dir))
+            else:
+                filtered_list.append((item, depth, path_to_dir))
 
 
-
-    # def __repr__(self) -> str:
-    #     representation = f'folder name: {self.name} \tupload time: {self.initialization_time}\n'
-    #     representation += '================================================================'
-    #     for item in self.children_dict:
-    #         representation += 
-    #     return representation
+        # Represent as text
+        result = ''
+        for item, depth, path_to_dir in filtered_list:
+            file_representation = ('|- ' + str(item)) if type(item) == File else ('┎ ' + item.name)
+            result += INDENT_SYMBOL * depth + file_representation + '\n'
+        return result 
 
