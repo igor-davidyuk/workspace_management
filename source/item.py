@@ -174,16 +174,21 @@ class Folder(Item):
                     match = False
             return match
 
+        used_folders = set()
         for item, depth, path_to_dir in item_list:
             if type(item) == File:
                 if combined_filter(item, pattern, filetype, min_size):
                     filtered_list.append((item, depth, path_to_dir))
+                    used_folders = used_folders.union(set(path_to_dir.split('/')))
             else:
                 filtered_list.append((item, depth, path_to_dir))
 
         # Represent as text
+        
         result = ''
         for item, depth, path_to_dir in filtered_list:
+            if type(item) == Folder and item.name not in used_folders:
+                continue
             file_representation = ('|- ' + str(item)) if type(item) == File else ('┎ ' + item.name)
             result += INDENT_SYMBOL * depth + file_representation + '\n'
         return result 
