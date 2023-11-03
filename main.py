@@ -74,7 +74,7 @@ class MyCommandPrompt(cmd.Cmd):
         print(" - delete: Delete an item in the Workspace.")
         print(" - help: Print this help message.")
         print(" - view: View an item.")
-        print(" - filter: filter folder contents.")
+        print(" - filter: filter folder contents. The only working option is `--name name_part_without_special_caracters`")
         print(" - exit: Exit.")
 
 
