@@ -34,12 +34,15 @@ class Folder(Item):
         """
         path = Path(path)
         if (
-            len(path.name) > 1 and  # In case of '.' input path
+            ignore_hidden and
             path.name.startswith('.') and
-            ignore_hidden
+            len(path.name) > 1  # In case of '.' input path
         ):
             return
-        item_name = name_override if name_override else path.absolute().name
+        # Find out the item name
+        item_name = name_override if name_override else path.name
+        if not item_name:  # In case of '.' input path
+            item_name = '.'
 
         if path.is_file():
             self.children_dict[item_name] = File(path.name, size_b=path.stat().st_size)
@@ -49,28 +52,26 @@ class Folder(Item):
                 child_folder.add(str(element), ignore_hidden=ignore_hidden)
             self.children_dict[item_name] = child_folder
 
+    def _remove_item(self, name_chain: list[str], chain_index: int) -> bool:
+        if name_chain[chain_index] in self.children_dict:
+            if len(name_chain) - 1 == chain_index:
+                del self.children_dict[name_chain[-1]]
+                return True
+            else:
+                return self.children_dict[name_chain[chain_index]]._remove_item(name_chain, chain_index + 1)
+        else:
+            return False
+
     def delete(self, path: str) -> bool:
-        split_path = path.split('/')
-        filename = split_path[-1]
-        parent_folder = self
+        name_chain = path.split('/')
 
         # handle cases when path is provided in form `./foo/...` or `/foo/...`
-        if split_path[0] == '' or split_path[0] == '.':
+        if name_chain[0] == '' or name_chain[0] == '.':
             starting_index = 1
         else:
             starting_index = 0
-        # go down to the target parent
-        for folder_name in split_path[starting_index:-1]:
-            if folder_name in parent_folder.children_dict:
-                parent_folder = parent_folder.children_dict[folder_name]
-            else:
-                return False
-        # remove the target from the children list
-        if filename in parent_folder.children_dict:
-            del parent_folder.children_dict[filename]
-            return True
-        else:
-            return False
+        # go down recursively to the target's parent
+        return self._remove_item(name_chain, starting_index)
 
 
     # def __repr__(self) -> str:
