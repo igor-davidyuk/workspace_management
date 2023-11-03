@@ -3,7 +3,7 @@ import logging
 import math
 from pathlib import Path  # Only used in `add` method
 import time
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
 import yaml
 
 def _load_type_mapping_config(path: str) -> Dict[str, str]:
@@ -18,7 +18,8 @@ FILESIZE_LITERALS = ['B', 'kB', 'MB', 'GB', 'TB']
 class Item:
     def __init__(self, name: str) -> None:
         self.name = name
-        self.initialization_time = time.asctime()
+        self.size_b = 0
+        self.initialization_time = time.localtime()
 
     # def view(self):
     #     raise NotImplementedError()
@@ -112,6 +113,24 @@ class Folder(Item):
         else:
             logging.warning('File not found')
             return False
+        
+    @staticmethod
+    def _get_sorting_function(type='alphabetical'):
+        alphabetical = lambda item: item.name
+        by_time = lambda item: item.initialization_time
+        by_size = lambda item: item.size_b
+        return by_size
+
+        
+    def traverse(self, depth: int = 0, path_to_dir: str = '') -> List[Tuple[Item, int, str]]:
+        result = []
+        for item in sorted(self.children_dict.values(), key=self._get_sorting_function()):
+            if type(item) == File:
+                result.append((item, depth, path_to_dir))
+            else:  # Folder
+                result.append((item, depth, path_to_dir))
+                result.extend(item.traverse(depth=depth+1, path_to_dir=path_to_dir + f'/{item.name}'))
+        return result
 
 
 
