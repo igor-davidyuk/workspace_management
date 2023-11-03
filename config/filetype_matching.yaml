@@ -1,0 +1,10 @@
+png: image
+jpg: image
+jpeg: image
+gif: image
+txt: text
+md: text
+vid: video
+mp4: video
+avi: video
+webm: video
