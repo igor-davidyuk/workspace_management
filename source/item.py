@@ -17,12 +17,14 @@ INDENT_SYMBOL = '  '
 FILESIZE_LITERALS = ['B', 'kB', 'MB', 'GB', 'TB']
 
 class Item:
+    """The base Item class."""
     def __init__(self, name: str) -> None:
         self.name = name
         self.size_b = 0
         self.initialization_time = time.localtime()
 
 class File(Item):
+    """File class."""
     def __init__(self, name: str, size_b: int) -> None:
         super().__init__(name)
         self.size_b = size_b
@@ -44,6 +46,7 @@ class File(Item):
         return self.indent_symbol * indent + f''
 
 class Folder(Item):
+    """Folder class."""
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.children_dict: Dict[str, self.__class__] = {}
@@ -54,11 +57,12 @@ class Folder(Item):
             ignore_hidden: Optional[bool] = False
         ) -> None:
         """
-        Add a file or a folder.
+        Add an item to the folder
 
         Args:
-            path (str): path pointing to the item being added
-                        in the computer filesystem.
+            path (str): path to real filesystem item
+            name_override (Optional[str], optional): give the item a new name. Defaults to None.
+            ignore_hidden (Optional[bool], optional): ignore hidden files. Defaults to False.
         """
         path = Path(path)
         if (
@@ -81,6 +85,16 @@ class Folder(Item):
             self.children_dict[item_name] = child_folder
 
     def _get_item(self, name_chain: list[str], chain_index: int) -> Optional[Item]:
+        """
+        Get item method.
+
+        Args:
+            name_chain (list[str]): list of names leading to the item
+            chain_index (int): current target index
+
+        Returns:
+            Optional[Item]: Item if found, else None
+        """
         if name_chain[chain_index] in self.children_dict:
             if len(name_chain) - 1 == chain_index:
                 return self.children_dict[name_chain[-1]]
@@ -119,7 +133,6 @@ class Folder(Item):
         by_size = lambda item: item.size_b
         return by_size
 
-        
     def traverse(self, depth: int = 0, path_to_dir: str = '') -> List[Tuple[Item, int, str]]:
         result = []
         for item in self.children_dict.values():
@@ -159,7 +172,6 @@ class Folder(Item):
                     match = True
                 else:
                     match = False
-            # print(filetype)
             return match
 
         for item, depth, path_to_dir in item_list:
@@ -169,11 +181,9 @@ class Folder(Item):
             else:
                 filtered_list.append((item, depth, path_to_dir))
 
-
         # Represent as text
         result = ''
         for item, depth, path_to_dir in filtered_list:
             file_representation = ('|- ' + str(item)) if type(item) == File else ('┎ ' + item.name)
             result += INDENT_SYMBOL * depth + file_representation + '\n'
         return result 
-
